@@ -1,0 +1,22 @@
+{
+  "name": "telemetry-lite",
+  "version": "0.1.0",
+  "description": "A tiny, dependency-free, offline-first web telemetry + error-tracking SDK you fully own.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "telemetry.js",
+  "files": ["telemetry.js"],
+  "scripts": {
+    "test": "node telemetry.test.js",
+    "serve": "node server/ingest.mjs"
+  },
+  "keywords": [
+    "telemetry",
+    "analytics",
+    "error-tracking",
+    "offline-first",
+    "zero-dependency",
+    "self-hosted",
+    "privacy"
+  ]
+}

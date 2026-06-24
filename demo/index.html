@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>telemetry-lite - demo</title>
+    <style>
+      :root { color-scheme: light dark; }
+      * { box-sizing: border-box; }
+      body {
+        font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+      h1 { font-size: 1.4rem; margin: 0 0 0.25rem; }
+      p.sub { margin: 0 0 1.5rem; opacity: 0.7; }
+      fieldset { border: 1px solid #8884; border-radius: 10px; padding: 1rem 1.25rem; margin: 0 0 1.25rem; min-width: 0; }
+      legend { padding: 0 0.4rem; font-weight: 600; opacity: 0.8; }
+      label { display: block; font-size: 0.85rem; opacity: 0.8; margin: 0 0 0.25rem; }
+      input { width: 100%; padding: 0.5rem 0.6rem; border: 1px solid #8886; border-radius: 8px; background: transparent; color: inherit; font: inherit; }
+      .row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      button {
+        padding: 0.5rem 0.9rem; border: 1px solid #8886; border-radius: 8px;
+        background: #8881; color: inherit; font: inherit; cursor: pointer;
+      }
+      button:hover { background: #8883; }
+      button.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+      pre {
+        background: #8881; border: 1px solid #8884; border-radius: 8px;
+        padding: 0.75rem; overflow: auto; max-height: 280px; font-size: 0.8rem; margin: 0;
+        min-width: 0;
+      }
+      .muted { opacity: 0.6; font-size: 0.8rem; }
+      code { background: #8882; padding: 0.1rem 0.35rem; border-radius: 5px; }
+    </style>
+  </head>
+  <body>
+    <h1>telemetry-lite</h1>
+    <p class="sub">A tiny, dependency-free, offline-first telemetry + error-tracking SDK. Open the console and try the buttons.</p>
+
+    <fieldset>
+      <legend>1. Endpoint</legend>
+      <label for="ep">Where batches POST to (run <code>node server/ingest.mjs</code> for a local one)</label>
+      <div class="row">
+        <input id="ep" value="http://localhost:8787/events" />
+        <button id="reinit" class="primary">Init</button>
+      </div>
+      <p class="muted" id="status">Not initialised yet.</p>
+    </fieldset>
+
+    <fieldset>
+      <legend>2. Send signals</legend>
+      <div class="row">
+        <button data-track="button_click">track button_click</button>
+        <button data-screen="home">screen home</button>
+        <button data-screen="settings">screen settings</button>
+        <button id="once">trackOnce activated</button>
+        <button id="identify">identifyUser</button>
+        <button id="boom">throw an error</button>
+        <button id="reject">reject a promise</button>
+        <button id="flush">flush now</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>3. Pending queue (localStorage)</legend>
+      <p class="muted">Events live here until a flush is acked 2xx. Reload the page - they survive. Stop the server, click around, restart it - nothing is lost.</p>
+      <pre id="queue">[]</pre>
+    </fieldset>
+
+    <!-- one file, no build, no deps -->
+    <script src="../telemetry.js"></script>
+    <script>
+      var statusEl = document.getElementById("status");
+      var queueEl = document.getElementById("queue");
+
+      function start() {
+        Telemetry.init({
+          appId: "demo-app",
+          endpoint: document.getElementById("ep").value,
+          flushIntervalMs: 5000,
+          maxBatch: 10,
+          debug: true,
+        });
+        statusEl.textContent = "Initialised. anon id: " + Telemetry.anonId;
+        render();
+      }
+
+      function render() {
+        queueEl.textContent = JSON.stringify(Telemetry.queue, null, 2);
+      }
+
+      document.getElementById("reinit").onclick = start;
+      document.getElementById("flush").onclick = function () {
+        Promise.resolve(Telemetry.flush()).then(render);
+      };
+      document.getElementById("once").onclick = function () {
+        Telemetry.trackOnce("activated", "activated");
+        render();
+      };
+      document.getElementById("identify").onclick = function () {
+        Telemetry.identifyUser("user-" + Math.floor(Math.random() * 1000)).then(function () {
+          statusEl.textContent = "Hashed user id attached (no raw id stored).";
+        });
+      };
+      document.getElementById("boom").onclick = function () {
+        // genuinely uncaught - the SDK's window.onerror hook captures it
+        setTimeout(function () {
+          throw new Error("demo: something broke");
+        }, 0);
+        setTimeout(render, 50);
+      };
+      document.getElementById("reject").onclick = function () {
+        Promise.reject(new Error("demo: unhandled rejection"));
+        setTimeout(render, 50);
+      };
+      Array.prototype.forEach.call(document.querySelectorAll("[data-track]"), function (b) {
+        b.onclick = function () {
+          Telemetry.track(b.getAttribute("data-track"), { at: Date.now() });
+          render();
+        };
+      });
+      Array.prototype.forEach.call(document.querySelectorAll("[data-screen]"), function (b) {
+        b.onclick = function () {
+          Telemetry.screen(b.getAttribute("data-screen"));
+          render();
+        };
+      });
+
+      start();
+      setInterval(render, 1000);
+    </script>
+  </body>
+</html>

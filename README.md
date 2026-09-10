@@ -1,110 +1,138 @@
-# telemetry-lite
+<h1 align="center">telemetry-lite</h1>
 
-A tiny, dependency-free, offline-first web telemetry + error-tracking SDK you fully own.
+<p align="center">
+  <strong>A tiny, dependency-free, offline-first web telemetry and error-tracking SDK you fully own.</strong>
+</p>
 
-One file, no build step, no third party.
-Drop `telemetry.js` into any page, point it at an HTTP endpoint you control, and you get product analytics events and crash reporting that never leave your own infrastructure.
+<p align="center">
+  <img src="https://img.shields.io/badge/bundle%20size-~9%20KB-blue?style=flat-square" alt="Bundle Size: ~9 KB">
+  <img src="https://img.shields.io/badge/dependencies-0-brightgreen?style=flat-square" alt="Zero Dependencies">
+  <img src="https://img.shields.io/badge/architecture-offline--first-orange?style=flat-square" alt="Offline-First Architecture">
+  <img src="https://img.shields.io/badge/privacy-self--hosted%20%7C%20device%20hashing-purple?style=flat-square" alt="Self-Hosted Privacy">
+  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License: MIT">
+</p>
 
-```js
-Telemetry.init({ appId: "my-app", endpoint: "https://example.com/events" });
-Telemetry.track("signup_started", { plan: "pro" });
-Telemetry.screen("home");
+---
+
+### ⚡ TL;DR
+
+**telemetry-lite** gives you privacy-friendly product analytics and automatic crash reporting without a third-party SaaS vendor. Drop `telemetry.js` into any web app, point it at an HTTP endpoint you control, and own your event stream.
+
+* 🛡️ **Zero Third Parties**: Direct `POST` to your own endpoint. No vendor accounts, no tracking cookies, and no cross-site identifiers.
+* 💾 **Offline-First & Durable**: Events queue in `localStorage` and survive page reloads and network loss. Batches retry automatically with single-flight locking so no events duplicate or drop.
+* 🚨 **Automatic Crash Reporting**: Traps uncaught errors and unhandled promise rejections with the trail of recent screen views and actions that caused them.
+* 🔒 **Privacy-by-Design**: User IDs are SHA-256 hashed strictly on-device before transmission, URLs strip query parameters to avoid leaking secrets, and breadcrumb trails carry names only—never sensitive values.
+* ⚡ **Zero Dependencies, No Build Step**: One standalone ~9 KB script. Just include it via `<script>` or bundle with your favorite framework.
+
+```html
+<script src="telemetry.js"></script>
+<script>
+  Telemetry.init({ appId: "my-app", endpoint: "https://example.com/events" });
+  Telemetry.track("signup_completed", { plan: "pro" });
+  Telemetry.screen("dashboard");
+</script>
 ```
 
-## Why
+---
 
-- **Offline-first.** Events are queued in `localStorage` and flushed in batches. They survive reloads and offline periods, and a failed flush keeps them for the next retry - nothing is dropped on a network blip.
-- **Zero dependencies, ~9 KB, no build.** It is one ES5 script that attaches `window.Telemetry`. No bundler, no npm install required to ship it.
-- **Errors included.** Uncaught errors and unhandled promise rejections become `app_error` events automatically, each carrying a short breadcrumb trail of the screens/events that led up to it.
-- **Privacy by construction.** Anonymous ids are random; user ids are SHA-256 hashed on the device; URLs are reduced to the pathname (never the query string); breadcrumbs are event/screen names only, never values.
-- **Yours.** The only network call is the `POST` to your endpoint. There is no vendor, no account, no shared backend.
+## 🚀 Quick Start
 
-## Quick start
+### 1. Include the SDK
+Include the script directly or load it asynchronously:
+```html
+<script src="telemetry.js"></script>
+```
 
-1. Add the script:
+### 2. Initialise Early
+```js
+Telemetry.init({
+  appId: "my-app",
+  endpoint: "https://example.com/events",
+  appVersion: "1.4.0", // optional: stamped on every event
+});
+```
 
-   ```html
-   <script src="telemetry.js"></script>
-   ```
+### 3. Track Actions & Screens
+```js
+// Track custom product events
+Telemetry.track("checkout_completed", { items: 3, currency: "USD" });
 
-2. Initialise once, as early as possible:
+// Track page / screen views
+Telemetry.screen("pricing");
 
-   ```js
-   Telemetry.init({
-     appId: "my-app",
-     endpoint: "https://example.com/events",
-     appVersion: "1.4.0", // optional, attached to every event
-   });
-   ```
+// Track one-time activation milestones (fires at most once ever per device)
+Telemetry.trackOnce("activated", "first_project_created");
 
-3. Track whatever you care about:
+// Attach an on-device hashed user identifier
+await Telemetry.identifyUser("user_12345");
+```
 
-   ```js
-   Telemetry.track("checkout_completed", { items: 3, currency: "USD" });
-   Telemetry.screen("pricing");
-   Telemetry.trackOnce("activated", "first_value"); // fires at most once per device
-   ```
+> **Flush cadence**: Events flush automatically every 15 seconds, whenever a batch reaches 25 events, and cleanly on page hide / unload (`visibilitychange`).
 
-That is the whole integration. Events flush every 15 seconds, when a batch fills up, and when the tab is hidden.
+---
 
-## Try it locally
+## 💻 Try It Locally in 60 Seconds
 
-No account, no signup - run the full loop on your machine:
+Run the complete telemetry loop locally on your machine with zero configuration:
 
 ```bash
-# 1. start the reference ingest endpoint (zero-dependency Node)
+# 1. Start the reference ingest endpoint (zero-dependency Node server)
 node server/ingest.mjs        # listens on http://localhost:8787/events
 
-# 2. open the demo in a browser (any static server works)
-python3 -m http.server 8000   # then visit http://localhost:8000/demo/
+# 2. Serve the demo page
+python3 -m http.server 8000   # open http://localhost:8000/demo/
 ```
 
-Click the buttons, watch events print in the server terminal, and watch the pending queue in the page.
-Stop the server, keep clicking, restart it - the queue drains and nothing is lost.
+1. Click the test buttons in the demo page to produce events and simulated errors.
+2. Watch batches print live in your ingest server terminal.
+3. Stop the server, keep clicking, and restart the server—the local queue automatically drains without dropping a single event.
 
-Run the test suite (zero dependencies, Node only):
-
+### Run Unit Tests
 ```bash
 npm test        # or: node telemetry.test.js
 ```
 
-## API
+---
+
+## 📖 API Reference
 
 ### `Telemetry.init(options)`
 
-| option | default | meaning |
-| --- | --- | --- |
-| `appId` | (required) | string identifying the app/site |
-| `endpoint` | (required) | URL that receives `POST { events: [...] }` |
-| `flushIntervalMs` | `15000` | how often the timer flushes |
-| `maxBatch` | `25` | events per flush; also the auto-flush threshold |
-| `storage` | `localStorage` | a `{ getItem, setItem }` adapter; bring your own |
-| `platform` | `"web"` | free-form string stamped on every event |
-| `appVersion` | `undefined` | optional version string stamped on every event |
-| `errors` | `true` | capture uncaught errors + promise rejections |
-| `fetchErrors` | `false` | also report failed fetches (`>= 500` or network error) |
-| `debug` | `false` | `console.log` internal activity |
+| Option | Default | Description |
+|---|:---:|---|
+| `appId` | *(required)* | Identifier for the application or website |
+| `endpoint` | *(required)* | URL endpoint receiving `POST { events: [...] }` |
+| `flushIntervalMs` | `15000` | Periodic timer interval between batch flushes (ms) |
+| `maxBatch` | `25` | Maximum events per flush batch & auto-flush threshold |
+| `storage` | `localStorage` | Storage adapter `{ getItem, setItem }` (pluggable) |
+| `platform` | `"web"` | Platform label stamped on every event payload |
+| `appVersion` | `undefined` | Version string stamped on every event payload |
+| `errors` | `true` | Automatically capture uncaught exceptions and unhandled rejections |
+| `fetchErrors` | `false` | Report failed fetch requests (`status >= 500` or network drops) |
+| `debug` | `false` | Enable verbose internal `console.log` logging |
 
 ### Methods
 
-- `track(event, props)` - record an event with an optional flat props object.
-- `screen(name, props)` - shorthand for a `screen_view` event.
-- `trackOnce(flagKey, event, props)` - fire an event at most once ever per device (activation milestones).
-- `identifyUser(rawId)` - attach a hashed user id (`await`able). The raw id is SHA-256 hashed on the device; the raw value never leaves it.
-- `reportError(message, stack, extra)` - manually report a caught error through the same pipe (and rate limit) the global hooks use. Useful where you swallow your own errors and they never reach `window.onerror`.
-- `flush()` - force a flush now (returns a promise).
+* **`Telemetry.track(event, props)`** — Records an event with an optional flat dictionary of properties.
+* **`Telemetry.screen(name, props)`** — Shorthand for recording a `screen_view` event.
+* **`Telemetry.trackOnce(flagKey, event, props)`** — Fires an event at most once per device lifetime.
+* **`Telemetry.identifyUser(rawId)`** — Hashes the ID with SHA-256 on device and associates subsequent events with `user_hash`.
+* **`Telemetry.reportError(message, stack, extra)`** — Manually reports a caught exception through the rate-limited crash pipe with breadcrumbs.
+* **`Telemetry.flush()`** — Returns a Promise forcing an immediate queue flush.
 
-## Event payload
+---
 
-Each event your endpoint receives looks like this:
+## 📦 Event Schema
+
+Batches arrive at your endpoint formatted as `{ "events": [ ... ] }`:
 
 ```json
 {
-  "event_id": "1f1c…",
+  "event_id": "b78b6716-e57c-4731-b3b4-52d83b27bcfb",
   "app_id": "my-app",
-  "anon_id": "9b2a…",
-  "user_hash": "e3b0…",
-  "session_id": "7d44…",
+  "anon_id": "9b2a758e-d9a2-4a0b-9689-91894d075253",
+  "user_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "session_id": "7d448108-c70e-436f-b2b0-9602bc6825c9",
   "event": "checkout_completed",
   "props": { "items": 3, "currency": "USD" },
   "platform": "web",
@@ -114,33 +142,19 @@ Each event your endpoint receives looks like this:
 }
 ```
 
-Batches arrive as `{ "events": [ … ] }`.
+---
 
-## The ingest contract
+## 🛡️ Reliability Invariants
 
-Your endpoint only has to do one thing reliably:
+The client SDK enforces strict invariants verified by the test suite:
 
-> Accept `POST { events: [...] }`. Durably store the batch, **then** respond `2xx`.
-> Respond non-`2xx` (or let the request fail) and the SDK keeps the events and retries.
+1. **Single Flight Flush**: Concurrent triggers (timer, tab hide, batch threshold) share a single in-flight network request to prevent duplicated payloads.
+2. **ID-Based Queue Eviction**: Events are evicted by `event_id` rather than queue index, ensuring new items enqueued during transit are never lost.
+3. **Queue Clamping**: Local storage is capped at 500 items, discarding the oldest entries under extended offline periods.
+4. **Rate-Limited Crash Reporting**: Crash captures are throttled to a maximum of 10 errors per minute per device with deduplication.
 
-That is the entire protocol. `server/ingest.mjs` is a ~50-line reference implementation (Node, no dependencies) that appends batches to an `events.ndjson` file - swap it for a serverless function, a queue, or a database insert. Because acknowledgement is what tells the client to drop events, **store before you ack**.
+---
 
-## How it survives failure
+## 📄 License
 
-These are the invariants the SDK is built around. They are not aspirational - each one is asserted by `telemetry.test.js`, and the suite is mutation-tested (reverting any one fix turns its test red):
-
-- **Single flush in flight.** The timer, the tab-hide handler, and the batch-full trigger can all fire at once; only one request goes out at a time, so two flushes can't each drop the same events.
-- **Acknowledge exactly what was sent.** On success the client removes events by `event_id`, not by position - so events queued (or trimmed by the cap) while a request was in the air are never lost.
-- **Bounded queue.** Beyond 500 queued events the oldest are dropped, protecting the storage quota.
-- **Loud persistence failures.** If `localStorage` is full or blocked (private mode), the client surfaces one `app_error` instead of silently becoming memory-only.
-- **Polite error capture.** At most 10 errors per minute per device, identical messages deduped within a minute, stacks capped.
-
-## Notes
-
-- **Other environments.** The default storage adapter uses `localStorage`. For React Native, a worker, or Node, pass your own `storage: { getItem, setItem }` (e.g. backed by `AsyncStorage`). `setItem` should return `false` on failure so persistence problems stay visible.
-- **Opting out of error capture.** `init({ errors: false })` disables the global hooks; `reportError(...)` then becomes a no-op too.
-- **Sampling / consent.** There is none built in by design - call `track` only when you should. Gate `init` behind your consent flow if you need to.
-
-## License
-
-MIT - see [LICENSE](LICENSE).
+MIT © [pekth](https://github.com/pekth)

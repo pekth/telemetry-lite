@@ -34,3 +34,10 @@ Last verified: 2026-08-25
 - [`package.json`](../package.json): package metadata and scripts.
 - [`AGENTS.md`](../AGENTS.md): public-safe repository operating and knowledge-maintenance rules.
 - [`docs/adr/README.md`](adr/README.md): decision index.
+
+## CI workflow maintenance
+
+- [ci.yml](../.github/workflows/ci.yml) uses full-SHA v7 pins for `actions/checkout`, `actions/setup-node`. Application language versions and explicit cache settings are preserved.
+- Obsolete runs for the same pull request or branch are cancelled. Existing timeout caps are preserved.
+
+Reviewed base: `e9e861783dc18dba8bf3eefe07291afe4aa7676a`. Source checks do not prove runtime, deployment or device behavior.

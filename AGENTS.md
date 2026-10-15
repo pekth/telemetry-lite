@@ -1,20 +1,29 @@
-# telemetry-lite repository instructions
+# telemetry-lite
 
-## Repo front door
+Project facts for coding agents and contributors.
 
-- Treat [README.md](README.md) as the product entry point.
-- Read [docs/KB.md](docs/KB.md) for public repository facts and known gaps.
-- Read [docs/adr/README.md](docs/adr/README.md) when a task changes or relies on a repository decision.
+Tiny, dependency-free, offline-first web telemetry and error-tracking SDK.
 
-## Knowledge maintenance
+## Layout
 
-- Keep project facts in `docs/KB.md` and decisions in `docs/adr/`.
-- Update those files in the same agent change when the change alters a documented fact or decision.
-- Cite repository files and verified revisions. Mark runtime, endpoint, deployment, and external-service state unknown unless the task verifies it.
-- Keep public documentation safe. Do not add credentials, personal data, private agent or orchestration instructions, private repository references, or local absolute paths.
-- Do not add scheduled knowledge-sync workflows. Repository knowledge is maintained beside the project through ordinary agent changes.
+- `telemetry.js`: SDK. `telemetry.test.js`: tests. `server/ingest.mjs`: reference ingest server (`npm run serve`). `demo/`: example page.
 
-## Validation
+## Verify
 
-- Run the smallest meaningful check after edits. For documentation-only changes, run `git diff --check` and inspect the complete diff.
-- For source changes, use the repository's `npm test` command.
+Matches CI (`.github/workflows/`):
+
+- `npm install --no-audit --no-fund`
+- `npm test`
+
+## Rules
+
+- Public repository: no credentials, personal data, private repository references, or absolute local paths.
+
+## Docs
+
+- Facts and known gaps: [`docs/KB.md`](docs/KB.md). Update it in the same change when a documented fact changes.
+- Decisions: [`docs/adr/`](docs/adr/README.md). Read the linked ADR before changing a recorded decision.
+
+## Issues and PRs
+
+Issue forms in `.github/ISSUE_TEMPLATE/` apply the `bug`, `feature`, and `chore` labels.
